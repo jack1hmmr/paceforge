@@ -1,16 +1,12 @@
 // ============================================================
-// app.js — PaceForge Frontend Logic
+// app.js — PaceForge Training Plan (Multi-Week)
 // ============================================================
 
-const userData = {
-  mileage: "—",
-  goal: "Not set yet",
-  fatigue: "—",
-};
+let fullPlan = null;
+let currentWeek = 1;
+let completedWorkouts = {};
 
-const completedWorkouts = new Set();
-let totalWorkouts = 0;
-
+// DOM elements
 const loadingState    = document.getElementById("loadingState");
 const errorState      = document.getElementById("errorState");
 const planGrid        = document.getElementById("planGrid");
@@ -19,54 +15,67 @@ const progressSection = document.getElementById("progressSection");
 const progressFill    = document.getElementById("progressFill");
 const progressCount   = document.getElementById("progressCount");
 const completedBadge  = document.getElementById("completedBadge");
+const weekNav         = document.getElementById("weekNav");
+const weekLabel       = document.getElementById("weekLabel");
+const weekPhase       = document.getElementById("weekPhase");
+const weekFocus       = document.getElementById("weekFocus");
+const phaseBar        = document.getElementById("phaseBar");
+const weekSummary     = document.getElementById("weekSummary");
 const toast           = document.getElementById("toast");
 const toastTitle      = document.getElementById("toastTitle");
 const toastSub        = document.getElementById("toastSub");
 
-const displayGoal    = document.getElementById("displayGoal");
-const displayMileage = document.getElementById("displayMileage");
-const displayFatigue = document.getElementById("displayFatigue");
-
-if (displayGoal)    displayGoal.textContent    = userData.goal;
-if (displayMileage) displayMileage.textContent = userData.mileage;
-if (displayFatigue) displayFatigue.textContent = userData.fatigue;
-
+// ============================================================
+// LOAD PLAN
+// ============================================================
 async function loadPlan() {
   show(loadingState);
   hide(errorState);
   hide(planGrid);
   hide(progressSection);
-  planGrid.innerHTML = "";
+  hide(weekNav);
+  hide(phaseBar);
+  hide(weekSummary);
 
   try {
     const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "signin.html";
+      return;
+    }
 
     const response = await fetch("/api/plan", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
+      headers: { "Authorization": `Bearer ${token}` }
     });
 
     if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      throw new Error(errData.error || `Server error: ${response.status}`);
+      const err = await response.json();
+      throw new Error(err.error || "Could not load plan");
     }
 
-    const plan = await response.json();
+    fullPlan = await response.json();
 
-    if (!plan.days || !Array.isArray(plan.days) || plan.days.length === 0) {
-      throw new Error("No plan found. Please complete the onboarding quiz first.");
-    }
+    // Load completed workouts
+    await loadCompletedWorkouts();
 
-    totalWorkouts = plan.days.length;
-    buildWorkoutCards(plan.days);
+    // Set plan meta
+    document.getElementById("metaGoal").textContent = fullPlan.goal || "—";
+    document.getElementById("metaRaceDate").textContent = fullPlan.raceDate || "—";
+    document.getElementById("metaTotalWeeks").textContent = fullPlan.totalWeeks + " weeks";
+
+    // Find current week based on today
+    currentWeek = findCurrentWeek();
+
+    // Build phase bar
+    buildPhaseBar();
 
     hide(loadingState);
-    show(planGrid);
+    show(weekNav);
+    show(phaseBar);
     show(progressSection);
-    updateProgress();
+    show(weekSummary);
+
+    renderWeek(currentWeek);
 
   } catch (error) {
     console.error("Error loading plan:", error);
@@ -76,27 +85,91 @@ async function loadPlan() {
   }
 }
 
-function buildWorkoutCards(days) {
-  planGrid.innerHTML = "";
+// ============================================================
+// FIND CURRENT WEEK
+// ============================================================
+function findCurrentWeek() {
+  // Start at week 1, could be smarter with actual dates later
+  return 1;
+}
 
-  days.forEach((day, index) => {
-    const dayName     = day.name    || `Day ${index + 1}`;
-    const workoutText = day.workout || "Rest day";
-    const dayShort    = dayName.substring(0, 3).toUpperCase();
+// ============================================================
+// BUILD PHASE BAR
+// ============================================================
+function buildPhaseBar() {
+  if (!fullPlan.phases) return;
+  phaseBar.innerHTML = "";
+
+  const phaseColors = {
+    "Base": "#3ecf8e",
+    "Build": "#ffb347",
+    "Peak": "#f4530c",
+    "Taper": "#888888"
+  };
+
+  fullPlan.phases.forEach(phase => {
+    const width = ((phase.weekEnd - phase.weekStart + 1) / fullPlan.totalWeeks) * 100;
+    const div = document.createElement("div");
+    div.className = "phase-segment";
+    div.style.width = width + "%";
+    div.style.background = phaseColors[phase.name] || "#444";
+    div.innerHTML = `<span>${phase.name}</span>`;
+    div.onclick = () => {
+      currentWeek = phase.weekStart;
+      renderWeek(currentWeek);
+    };
+    phaseBar.appendChild(div);
+  });
+}
+
+// ============================================================
+// RENDER WEEK
+// ============================================================
+function renderWeek(weekNum) {
+  currentWeek = weekNum;
+  const weekData = fullPlan.weeks.find(w => w.week === weekNum);
+  if (!weekData) return;
+
+  // Update nav
+  weekLabel.textContent = `Week ${weekNum} of ${fullPlan.totalWeeks}`;
+  weekPhase.textContent = weekData.phase || "";
+  weekFocus.textContent = weekData.focus || "";
+
+  // Update summary
+  document.getElementById("summaryMiles").textContent = weekData.totalMiles ? weekData.totalMiles + " mi" : "—";
+  document.getElementById("summaryPhase").textContent = weekData.phase || "—";
+
+  // Disable prev/next buttons
+  document.getElementById("prevWeek").disabled = weekNum <= 1;
+  document.getElementById("nextWeek").disabled = weekNum >= fullPlan.totalWeeks;
+
+  // Build workout cards
+  planGrid.innerHTML = "";
+  show(planGrid);
+
+  weekData.days.forEach((day, index) => {
+    const dayName  = day.name || `Day ${index + 1}`;
+    const dayShort = dayName.substring(0, 3).toUpperCase();
+    const workout  = day.workout || "Rest";
+    const type     = day.type || "";
+    const key      = `${weekNum}-${dayName}`;
+    const isDone   = completedWorkouts[key] === true;
 
     const card = document.createElement("div");
-    card.className = "workout-card";
-    card.dataset.day = dayName;
+    card.className = "workout-card" + (isDone ? " completed" : "");
+    card.dataset.key = key;
+
+    const typeColor = getTypeColor(type);
 
     card.innerHTML = `
       <div class="day-label">
         <span class="day-name">${dayShort}</span>
-        <span class="day-num">Day ${index + 1}</span>
+        <span class="day-num" style="color: ${typeColor}">${type}</span>
       </div>
       <div class="workout-info">
-        <p class="workout-text">${escapeHtml(workoutText)}</p>
+        <p class="workout-text">${escapeHtml(workout)}</p>
       </div>
-      <button class="complete-btn" onclick="markComplete(this, '${escapeHtml(dayName)}')">
+      <button class="complete-btn" onclick="markComplete(this, '${escapeHtml(dayName)}', ${weekNum})">
         Mark Done
       </button>
       <div class="completed-check">
@@ -109,41 +182,116 @@ function buildWorkoutCards(days) {
 
     planGrid.appendChild(card);
   });
+
+  updateWeekProgress(weekNum, weekData.days.length);
+  updateOverallProgress();
 }
 
-function markComplete(button, dayName) {
+// ============================================================
+// GET TYPE COLOR
+// ============================================================
+function getTypeColor(type) {
+  const colors = {
+    "Easy Run": "#3ecf8e",
+    "Long Run": "#ffb347",
+    "Workout": "#f4530c",
+    "Tempo": "#f4530c",
+    "Intervals": "#f4530c",
+    "Cross Training": "#4a9eff",
+    "Rest": "#444",
+    "Recovery": "#3ecf8e"
+  };
+  return colors[type] || "#888";
+}
+
+// ============================================================
+// CHANGE WEEK
+// ============================================================
+function changeWeek(direction) {
+  const newWeek = currentWeek + direction;
+  if (newWeek < 1 || newWeek > fullPlan.totalWeeks) return;
+  renderWeek(newWeek);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ============================================================
+// MARK COMPLETE
+// ============================================================
+async function markComplete(button, dayName, weekNum) {
   const card = button.closest(".workout-card");
   if (card.classList.contains("completed")) return;
 
   card.classList.add("completed");
-  completedWorkouts.add(dayName);
 
-  showToast(
-    `${dayName} complete! 🏃`,
-    completedWorkouts.size === totalWorkouts
-      ? "You've finished the whole week. Incredible!"
-      : "Keep going — you're building momentum."
-  );
+  const key = `${weekNum}-${dayName}`;
+  completedWorkouts[key] = true;
 
-  updateProgress();
+  // Save to server
+  try {
+    const token = localStorage.getItem("token");
+    await fetch("/api/log-workout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ weekNumber: weekNum, dayName })
+    });
+  } catch (e) {
+    console.error("Could not save workout log:", e);
+  }
+
+  const weekData = fullPlan.weeks.find(w => w.week === weekNum);
+  updateWeekProgress(weekNum, weekData?.days.length || 7);
+  updateOverallProgress();
+
+  showToast(`${dayName} complete! 🏃`, "Keep building momentum.");
 }
 
-function updateProgress() {
-  const done    = completedWorkouts.size;
-  const total   = totalWorkouts;
-  const percent = total > 0 ? Math.round((done / total) * 100) : 0;
-
-  progressFill.style.width    = percent + "%";
-  progressCount.textContent   = `${done} of ${total} workouts done`;
-  if (completedBadge) completedBadge.textContent = `${done} / ${total} done`;
+// ============================================================
+// LOAD COMPLETED WORKOUTS
+// ============================================================
+async function loadCompletedWorkouts() {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch("/api/workout-logs", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const logs = await res.json();
+    logs.forEach(log => {
+      completedWorkouts[`${log.week_number}-${log.day_name}`] = true;
+    });
+  } catch (e) {
+    console.error("Could not load workout logs:", e);
+  }
 }
 
+// ============================================================
+// UPDATE PROGRESS
+// ============================================================
+function updateWeekProgress(weekNum, totalDays) {
+  const weekDone = Object.keys(completedWorkouts).filter(k => k.startsWith(`${weekNum}-`)).length;
+  document.getElementById("summaryDone").textContent = `${weekDone} / ${totalDays}`;
+}
+
+function updateOverallProgress() {
+  const totalWorkouts = fullPlan.totalWeeks * 7;
+  const totalDone = Object.keys(completedWorkouts).length;
+  const percent = Math.round((totalDone / totalWorkouts) * 100);
+
+  progressFill.style.width = percent + "%";
+  progressCount.textContent = `Week ${currentWeek} of ${fullPlan.totalWeeks}`;
+  if (completedBadge) completedBadge.textContent = percent + "% done";
+}
+
+// ============================================================
+// TOAST
+// ============================================================
 let toastTimer = null;
 
 function showToast(title, subtitle) {
   if (toastTimer) {
     clearTimeout(toastTimer);
-    toast.classList.remove("fade-out");
     toast.classList.add("hidden");
     setTimeout(() => _displayToast(title, subtitle), 80);
   } else {
@@ -153,9 +301,8 @@ function showToast(title, subtitle) {
 
 function _displayToast(title, subtitle) {
   toastTitle.textContent = title;
-  toastSub.textContent   = subtitle;
+  toastSub.textContent = subtitle;
   toast.classList.remove("hidden", "fade-out");
-
   toastTimer = setTimeout(() => {
     toast.classList.add("fade-out");
     setTimeout(() => {
@@ -165,6 +312,9 @@ function _displayToast(title, subtitle) {
   }, 3500);
 }
 
+// ============================================================
+// HELPERS
+// ============================================================
 function show(el) { if (el) el.classList.remove("hidden"); }
 function hide(el) { if (el) el.classList.add("hidden"); }
 
@@ -174,7 +324,9 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-// Check if user is logged in, if not redirect to signin
+// ============================================================
+// START
+// ============================================================
 const token = localStorage.getItem("token");
 if (!token) {
   window.location.href = "signin.html";
