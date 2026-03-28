@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const { Pool } = require("pg");
 
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static(__dirname));
 
 // ============================================================
 // ⚠️ PASTE YOUR OPENAI API KEY HERE
