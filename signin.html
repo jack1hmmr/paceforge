@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — PaceForge</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230f0f0f' stroke='%23f4530c' stroke-width='6'/><path d='M25 65 L40 35 L55 52 L70 25' stroke='%23f4530c' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body class="auth-page">
+
+  <div class="grain"></div>
+
+  <nav class="topnav">
+    <a href="index.html" class="nav-logo">PACEFORGE</a>
+    <span class="nav-tagline">— AI Running Coach</span>
+  </nav>
+
+  <main class="auth-main">
+
+    <div class="auth-card">
+      <p class="overline">Welcome back</p>
+      <h1 class="auth-title">SIGN INTO<br/><em>YOUR PLAN</em></h1>
+
+      <div class="auth-form">
+
+        <div class="field-group">
+          <label class="field-label">Email</label>
+          <input class="field-input" type="email" id="email" placeholder="alex@example.com" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <input class="field-input" type="password" id="password" placeholder="Your password" />
+        </div>
+
+        <div class="auth-error hidden" id="authError"></div>
+
+        <button class="auth-btn" id="signinBtn" onclick="handleSignin()">
+          Sign In
+        </button>
+
+        <p class="auth-switch">
+          Don't have an account? <a href="signup.html">Sign up free</a>
+        </p>
+
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    async function handleSignin() {
+      const email    = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const btn      = document.getElementById("signinBtn");
+
+      if (!email || !password) {
+        showError("Please fill in all fields.");
+        return;
+      }
+
+      btn.textContent = "Signing in…";
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/api/signin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error);
+          btn.textContent = "Sign In";
+          btn.disabled = false;
+          return;
+        }
+
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userName", data.name);
+        localStorage.setItem("userId", data.id);
+
+        // If they've done onboarding go to training, otherwise go to onboarding
+        if (data.hasCompletedOnboarding) {
+          window.location.href = "training.html";
+        } else {
+          window.location.href = "onboarding.html";
+        }
+
+      } catch (err) {
+        showError("Something went wrong. Please try again.");
+        btn.textContent = "Sign In";
+        btn.disabled = false;
+      }
+    }
+
+    function showError(msg) {
+      const errBox = document.getElementById("authError");
+      errBox.textContent = msg;
+      errBox.classList.remove("hidden");
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleSignin();
+    });
+  </script>
+
+</body>
+</html>

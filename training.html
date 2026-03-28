@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Plan — PaceForge</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230f0f0f' stroke='%23f4530c' stroke-width='6'/><path d='M25 65 L40 35 L55 52 L70 25' stroke='%23f4530c' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body class="training-page">
+
+  <div class="grain"></div>
+
+  <nav class="topnav">
+    <a href="index.html" class="nav-back">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M14 9H4M4 9l5-5M4 9l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Back
+    </a>
+    <span class="nav-logo">PACEFORGE</span>
+    <div class="nav-badge" id="completedBadge">0 / 7 done</div>
+  </nav>
+
+  <main class="training-main">
+
+    <header class="plan-header">
+      <div class="plan-header-left">
+        <p class="overline">Your weekly plan</p>
+        <h1 class="plan-title">TRAINING<br/><em>SCHEDULE</em></h1>
+      </div>
+      <div class="user-profile-card">
+        <div class="profile-row">
+          <span class="profile-label">Goal</span>
+          <span class="profile-value" id="displayGoal">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Weekly miles</span>
+          <span class="profile-value" id="displayMileage">—</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Fatigue level</span>
+          <span class="profile-value" id="displayFatigue">—</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="loading-state" id="loadingState">
+      <div class="loading-pulse">
+        <div class="pulse-ring"></div>
+        <div class="pulse-core">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M7 18 L13 10 L17 15 L22 7" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <p class="loading-title">ChatGPT is building your plan…</p>
+      <p class="loading-sub">Analyzing your mileage, goal, and fatigue level</p>
+    </div>
+
+    <div class="error-state hidden" id="errorState">
+      <div class="error-icon">⚠️</div>
+      <p class="error-title">Couldn't load your plan</p>
+      <p class="error-sub" id="errorMessage">Check your server logs for details.</p>
+      <button class="retry-button" onclick="loadPlan()">Try Again</button>
+    </div>
+
+    <section class="plan-grid hidden" id="planGrid"></section>
+
+    <div class="progress-section hidden" id="progressSection">
+      <div class="progress-header">
+        <span class="progress-label">Weekly progress</span>
+        <span class="progress-count" id="progressCount">0 of 7 workouts done</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="toast hidden" id="toast">
+    <div class="toast-icon">✓</div>
+    <div class="toast-text">
+      <strong id="toastTitle">Workout complete!</strong>
+      <span id="toastSub">Great work. Keep the momentum going.</span>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+
+</body>
+</html>

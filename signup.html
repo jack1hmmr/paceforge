@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up — PaceForge</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230f0f0f' stroke='%23f4530c' stroke-width='6'/><path d='M25 65 L40 35 L55 52 L70 25' stroke='%23f4530c' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body class="auth-page">
+
+  <div class="grain"></div>
+
+  <nav class="topnav">
+    <a href="index.html" class="nav-logo">PACEFORGE</a>
+    <span class="nav-tagline">— AI Running Coach</span>
+  </nav>
+
+  <main class="auth-main">
+
+    <div class="auth-card">
+      <p class="overline">Get started</p>
+      <h1 class="auth-title">CREATE YOUR<br/><em>ACCOUNT</em></h1>
+      <p class="auth-sub">You'll set up your training profile right after.</p>
+
+      <div class="auth-form">
+
+        <div class="field-group">
+          <label class="field-label">Full Name</label>
+          <input class="field-input" type="text" id="name" placeholder="Alex Johnson" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Age</label>
+          <input class="field-input" type="number" id="age" placeholder="24" min="10" max="100" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Email</label>
+          <input class="field-input" type="email" id="email" placeholder="alex@example.com" />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Password</label>
+          <input class="field-input" type="password" id="password" placeholder="At least 6 characters" />
+        </div>
+
+        <div class="auth-error hidden" id="authError"></div>
+
+        <button class="auth-btn" id="signupBtn" onclick="handleSignup()">
+          Create Account
+        </button>
+
+        <p class="auth-switch">
+          Already have an account? <a href="signin.html">Sign in</a>
+        </p>
+
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    async function handleSignup() {
+      const name     = document.getElementById("name").value.trim();
+      const age      = document.getElementById("age").value.trim();
+      const email    = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const btn      = document.getElementById("signupBtn");
+      const errBox   = document.getElementById("authError");
+
+      errBox.classList.add("hidden");
+
+      if (!name || !age || !email || !password) {
+        showError("Please fill in all fields.");
+        return;
+      }
+
+      btn.textContent = "Creating account…";
+      btn.disabled = true;
+
+      try {
+        const res = await fetch("/api/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, age: parseInt(age), email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showError(data.error);
+          btn.textContent = "Create Account";
+          btn.disabled = false;
+          return;
+        }
+
+        // Save token and name to localStorage
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userName", data.name);
+        localStorage.setItem("userId", data.id);
+
+        // Go to onboarding quiz
+        window.location.href = "onboarding.html";
+
+      } catch (err) {
+        showError("Something went wrong. Please try again.");
+        btn.textContent = "Create Account";
+        btn.disabled = false;
+      }
+    }
+
+    function showError(msg) {
+      const errBox = document.getElementById("authError");
+      errBox.textContent = msg;
+      errBox.classList.remove("hidden");
+    }
+
+    // Allow pressing Enter to submit
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleSignup();
+    });
+  </script>
+
+</body>
+</html>
