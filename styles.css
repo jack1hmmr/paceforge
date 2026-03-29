@@ -1282,7 +1282,7 @@ a {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-image: url('bg.png');
+  background-image: url('wall.png');
   background-size: cover;
   background-position: center;
   padding: 2rem;
@@ -1350,7 +1350,7 @@ a {
 .lock-bg {
   position: absolute;
   inset: 0;
-  background-image: url('bg.png');
+  background-image: url('wall.png');
   background-size: cover;
   background-position: center;
   filter: brightness(0.6) blur(2px);
@@ -1405,7 +1405,7 @@ a {
 .home-wallpaper {
   position: absolute;
   inset: 0;
-  background-image: url('bg.png');
+  background-image: url('wall.png');
   background-size: cover;
   background-position: center;
   filter: brightness(0.75);
