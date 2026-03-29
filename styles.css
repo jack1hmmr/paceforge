@@ -1615,3 +1615,191 @@ a {
 .settings-item:hover {
   background: var(--surface2);
 }
+/* ============================================================
+   SETUP / ONBOARDING SCREENS — iPhone style
+============================================================ */
+.setup-hello {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  text-align: center;
+  padding: 2rem;
+}
+
+.setup-os-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 1rem;
+}
+
+.setup-hello-text {
+  font-family: var(--font-display);
+  font-size: 5.5rem;
+  color: #fff;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 30px rgba(0,0,0,0.4);
+  margin-bottom: 0.75rem;
+}
+
+.setup-tagline {
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.75);
+  letter-spacing: 0.04em;
+}
+
+.setup-bottom {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem 1.5rem 2rem;
+  width: 100%;
+}
+
+.setup-btn-primary {
+  display: block;
+  text-align: center;
+  width: 100%;
+  padding: 0.85rem;
+  background: rgba(255,255,255,0.95);
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  text-decoration: none;
+}
+
+.setup-btn-primary:hover {
+  background: #fff;
+  transform: scale(1.01);
+}
+
+.setup-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.setup-btn-secondary {
+  display: block;
+  text-align: center;
+  width: 100%;
+  padding: 0.85rem;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 12px;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background var(--transition);
+  text-decoration: none;
+}
+
+.setup-btn-secondary:hover {
+  background: rgba(255,255,255,0.22);
+}
+
+.setup-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg);
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.setup-screen-header {
+  margin-bottom: 1.75rem;
+  padding-top: 0.5rem;
+}
+
+.setup-screen-header .setup-os-label {
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.setup-screen-title {
+  font-family: var(--font-display);
+  font-size: 2.8rem;
+  line-height: 0.95;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.setup-screen-sub {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.setup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.setup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.setup-field-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.setup-field-input {
+  padding: 0.75rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  outline: none;
+  width: 100%;
+  transition: border-color var(--transition);
+}
+
+.setup-field-input:focus {
+  border-color: var(--accent);
+}
+
+.setup-field-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.setup-error {
+  padding: 0.65rem 0.85rem;
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 8px;
+  color: #ff6b6b;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.setup-link {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
