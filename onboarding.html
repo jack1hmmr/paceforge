@@ -164,7 +164,7 @@
         if (!res.ok) throw new Error(data.error);
         loadingRow.remove();
         addCoachBubble(`Your plan is ready ${firstName}! Let's get to work. 💪`);
-        setTimeout(() => { window.location.href = "training.html"; }, 1500);
+        setTimeout(() => { window.location.href = "dashboard.html"; }, 1500);
       } catch (err) {
         loadingRow.remove();
         addCoachBubble(`Sorry, something went wrong: ${err.message}. Please try again.`);
