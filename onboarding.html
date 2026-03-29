@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Build Your Plan — PaceForge</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230f0f0f' stroke='%23f4530c' stroke-width='6'/><path d='M25 65 L40 35 L55 52 L70 25' stroke='%23f4530c' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230B0F14' stroke='%232F80FF' stroke-width='6'/><path d='M25 65 L40 35 L55 52 L70 25' stroke='%232F80FF' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
@@ -13,334 +13,119 @@
 
   <div class="grain"></div>
 
-  <nav class="topnav">
-    <span class="nav-logo">PACEFORGE</span>
-    <div class="onboarding-progress-wrap">
-      <div class="onboarding-progress-bar" id="progressBar"></div>
+  <!-- Top bar -->
+  <div class="imessage-topbar">
+    <div class="imessage-avatar">🏃</div>
+    <div class="imessage-contact">
+      <span class="imessage-name">PaceForge Coach</span>
+      <span class="imessage-status">Building your plan</span>
     </div>
-    <span class="onboarding-step-label" id="stepLabel">1 of 20</span>
-  </nav>
+    <div class="imessage-progress-wrap">
+      <div class="imessage-progress-bar" id="progressBar"></div>
+    </div>
+  </div>
 
-  <main class="onboarding-main">
-    <div class="chat-window" id="chatWindow"></div>
-    <div class="chat-input-area" id="inputArea"></div>
-  </main>
+  <!-- Chat window -->
+  <main class="imessage-main" id="chatWindow"></main>
+
+  <!-- Input bar -->
+  <div class="imessage-inputbar">
+    <input
+      type="text"
+      class="imessage-input"
+      id="chatInput"
+      placeholder="iMessage"
+      autocomplete="off"
+    />
+    <button class="imessage-send" id="sendBtn" onclick="handleSend()">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M9 15V3M9 3L4 8M9 3L14 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
 
   <script>
-    // ============================================================
-    // ALL QUIZ QUESTIONS
-    // ============================================================
     const userName = localStorage.getItem("userName") || "there";
     const firstName = userName.split(" ")[0];
 
     const questions = [
-      // BLOCK 1 — Basic Info
-      {
-        id: "sex",
-        question: `Hey ${firstName}! I'm your PaceForge coach. I'm going to ask you a few questions so I can build the perfect training plan for you. Let's start simple — what's your sex?`,
-        type: "choice",
-        options: ["Male", "Female", "Prefer not to say"]
-      },
-      {
-        id: "height",
-        question: "What's your height? (e.g. 5'10\" or 178cm)",
-        type: "text",
-        placeholder: "e.g. 5'10\""
-      },
-      {
-        id: "weight",
-        question: "What's your weight? (e.g. 160 lbs or 73 kg)",
-        type: "text",
-        placeholder: "e.g. 160 lbs"
-      },
-      {
-        id: "bodyFat",
-        question: "Do you know your approximate body fat %? (Skip if unsure)",
-        type: "text",
-        placeholder: "e.g. 15% or type 'skip'"
-      },
-
-      // BLOCK 2 — Running Background
-      {
-        id: "yearsRunning",
-        question: "How many years have you been running?",
-        type: "choice",
-        options: ["Less than 1 year", "1–2 years", "3–5 years", "5+ years"]
-      },
-      {
-        id: "weeklyMileage",
-        question: "What's your typical weekly mileage right now?",
-        type: "text",
-        placeholder: "e.g. 20 miles"
-      },
-      {
-        id: "favoriteDistance",
-        question: "What's your favorite or most comfortable race distance?",
-        type: "choice",
-        options: ["400m / Mile", "5K", "10K", "Half Marathon", "Marathon", "Ultra"]
-      },
-      {
-        id: "recentPRs",
-        question: "What are your recent race PRs? (Skip if you don't have any)",
-        type: "text",
-        placeholder: "e.g. 5K: 19:30, 10K: 41:00 or type 'skip'"
-      },
-      {
-        id: "injuries",
-        question: "Have you had any injuries in the past 12 months? If yes, describe them briefly.",
-        type: "text",
-        placeholder: "e.g. Left knee pain in March, or type 'none'"
-      },
-
-      // BLOCK 3 — Fitness & Strength
-      {
-        id: "fitnessLevel",
-        question: "How would you rate yourself as a runner?",
-        type: "choice",
-        options: ["Beginner", "Intermediate", "Advanced", "Elite"]
-      },
-      {
-        id: "currentPace",
-        question: "What's your current easy run pace per mile?",
-        type: "text",
-        placeholder: "e.g. 8:30 per mile"
-      },
-      {
-        id: "liftingStats",
-        question: "Do you have any lifting stats? (squat/bench/deadlift 1RM — skip if not applicable)",
-        type: "text",
-        placeholder: "e.g. Squat 185lbs, Deadlift 225lbs or type 'skip'"
-      },
-
-      // BLOCK 4 — Recovery & Lifestyle
-      {
-        id: "sleepHours",
-        question: "How many hours of sleep do you get on average per night?",
-        type: "choice",
-        options: ["Less than 6", "6–7 hours", "7–8 hours", "8+ hours"]
-      },
-      {
-        id: "stressLevel",
-        question: "What's your typical daily stress level?",
-        type: "choice",
-        options: ["1–3 (Low)", "4–6 (Moderate)", "7–8 (High)", "9–10 (Very High)"]
-      },
-      {
-        id: "nutrition",
-        question: "How would you describe your current nutrition habits?",
-        type: "choice",
-        options: ["Poor", "Average", "Good", "Very structured"]
-      },
-      {
-        id: "hydration",
-        question: "What do you mostly drink during the day?",
-        type: "choice",
-        options: ["Mostly water", "Water + electrolytes", "Mix of soda/juice", "Mostly soda/coffee"]
-      },
-
-      // BLOCK 5 — Training Preferences
-      {
-        id: "daysPerWeek",
-        question: "How many days per week can you train?",
-        type: "choice",
-        options: ["3 days", "4 days", "5 days", "6 days", "7 days"]
-      },
-      {
-        id: "trainingTypes",
-        question: "What types of training are you willing to do? (pick all that apply — type the numbers separated by commas)",
-        type: "multitext",
-        options: ["1. Easy runs", "2. Long runs", "3. Tempo runs", "4. Intervals", "5. Hill repeats", "6. Sprints", "7. Lifting", "8. Plyometrics", "9. Cross training"],
-        placeholder: "e.g. 1, 2, 3, 4"
-      },
-      {
-        id: "injuryCaution",
-        question: "Any areas I should be cautious about when building your plan?",
-        type: "choice",
-        options: ["Ankles", "Knees", "Hips", "Back", "None"]
-      },
-      {
-        id: "gymAccess",
-        question: "Do you have access to a gym for cross training or lifting?",
-        type: "choice",
-        options: ["Yes, full gym", "Yes, basic equipment", "Home equipment only", "No gym access"]
-      },
-
-      // BLOCK 6 — Rosner Running Limiter Test
-      {
-        id: "rosner",
-        question: `Now I need to find your running limiter — this helps me build a plan that targets your weakest link. Please take the Rosner Running Limiter Test and come back with your result.\n\n👉 Take the test here: https://running-limiter-finder-216861655601.us-west1.run.app/\n\nWhat was your result?`,
-        type: "text",
-        placeholder: "e.g. Aerobic capacity, Strength, Lactate threshold..."
-      },
-
-      // BLOCK 7 — Goal
-      {
-        id: "goalDistance",
-        question: "What race distance are you training for?",
-        type: "choice",
-        options: ["5K", "10K", "Half Marathon", "Marathon", "Ultra", "General fitness"]
-      },
-      {
-        id: "goalTime",
-        question: "What's your goal time? (Skip if training for general fitness)",
-        type: "text",
-        placeholder: "e.g. sub 19:00 for 5K or type 'skip'"
-      },
-      {
-        id: "raceDate",
-        question: "When is your race? (Skip if no specific race)",
-        type: "text",
-        placeholder: "e.g. June 15, 2025 or type 'skip'"
-      },
-
-      // BLOCK 8 — Psychological
-      {
-        id: "motivation",
-        question: "How motivated are you right now to train hard?",
-        type: "choice",
-        options: ["1–3 (Struggling)", "4–6 (Moderate)", "7–8 (Motivated)", "9–10 (All in"]
-      },
-      {
-        id: "environment",
-        question: "What's your favorite running environment?",
-        type: "choice",
-        options: ["Road", "Track", "Trail", "Treadmill", "Mix of everything"]
-      },
-      {
-        id: "planStyle",
-        question: "Last one! Do you prefer a structured plan or flexible AI-guided suggestions?",
-        type: "choice",
-        options: ["Structured — tell me exactly what to do", "Flexible — guide me but let me adapt"]
-      }
+      { id: "sex", question: `Hey ${firstName}! I'm your PaceForge coach. I'm going to ask you a few questions so I can build the perfect training plan for you.\n\nFirst — what's your sex? (Male / Female / Prefer not to say)` },
+      { id: "height", question: "What's your height? (e.g. 5'10\" or 178cm)" },
+      { id: "weight", question: "What's your weight? (e.g. 160 lbs or 73 kg)" },
+      { id: "bodyFat", question: "Do you know your approximate body fat %? (Type 'skip' if unsure)" },
+      { id: "yearsRunning", question: "How many years have you been running? (e.g. Less than 1, 1-2, 3-5, 5+)" },
+      { id: "weeklyMileage", question: "What's your typical weekly mileage right now? (e.g. 20 miles, or 'none' if just starting)" },
+      { id: "favoriteDistance", question: "What's your favorite or most comfortable race distance? (e.g. 5K, 10K, Half Marathon, Marathon)" },
+      { id: "recentPRs", question: "What are your recent race PRs? (e.g. 5K: 19:30 — type 'skip' if none)" },
+      { id: "injuries", question: "Any injuries in the past 12 months? Describe briefly or type 'none'" },
+      { id: "fitnessLevel", question: "How would you rate yourself as a runner? (Beginner / Intermediate / Advanced / Elite)" },
+      { id: "currentPace", question: "What's your current easy run pace per mile? (e.g. 8:30 per mile)" },
+      { id: "liftingStats", question: "Any lifting stats? Squat/bench/deadlift 1RM — type 'skip' if not applicable" },
+      { id: "sleepHours", question: "How many hours of sleep do you get per night on average? (e.g. 7)" },
+      { id: "stressLevel", question: "Daily stress level on a scale of 1-10? (1 = very calm, 10 = extremely stressed)" },
+      { id: "nutrition", question: "How would you describe your nutrition? (Poor / Average / Good / Very structured)" },
+      { id: "hydration", question: "What do you mostly drink during the day? (e.g. Water, soda, coffee, mix)" },
+      { id: "daysPerWeek", question: "How many days per week can you train? (e.g. 4)" },
+      { id: "trainingTypes", question: "What types of training are you willing to do? List any that apply: easy runs, long runs, tempo, intervals, hills, sprints, lifting, plyometrics, cross training" },
+      { id: "injuryCaution", question: "Any body areas I should be cautious about? (e.g. knees, ankles, hips — or type 'none')" },
+      { id: "gymAccess", question: "Do you have access to a gym? (Full gym / Basic equipment / Home only / No gym)" },
+      { id: "rosner", question: `Now I need to find your running limiter — this helps me target your weakest link.\n\n👉 Take the Rosner Running Limiter Test:\nhttps://running-limiter-finder-216861655601.us-west1.run.app/\n\nCome back and tell me your result.` },
+      { id: "goalDistance", question: "What race distance are you training for? (e.g. 5K, 10K, Half Marathon, Marathon, Ultra, or 'general fitness')" },
+      { id: "goalTime", question: "What's your goal time? (e.g. sub 19:00 for 5K — type 'skip' if general fitness)" },
+      { id: "raceDate", question: "When is your race? (e.g. June 15, 2025 — type 'skip' if no specific race)" },
+      { id: "motivation", question: "How motivated are you right now on a scale of 1-10?" },
+      { id: "environment", question: "Favorite running environment? (Road / Track / Trail / Treadmill / Mix)" },
+      { id: "planStyle", question: "Last one! Do you prefer a structured plan or flexible AI-guided suggestions? (Structured / Flexible)" },
     ];
 
-    // ============================================================
-    // STATE
-    // ============================================================
     let currentQuestion = 0;
     const answers = {};
 
-    // ============================================================
-    // RENDER
-    // ============================================================
+    const chatWindow = document.getElementById("chatWindow");
+    const chatInput = document.getElementById("chatInput");
+    const sendBtn = document.getElementById("sendBtn");
+
     function updateProgress() {
-      const pct = ((currentQuestion) / questions.length) * 100;
+      const pct = (currentQuestion / questions.length) * 100;
       document.getElementById("progressBar").style.width = pct + "%";
-      document.getElementById("stepLabel").textContent =
-        `${currentQuestion + 1} of ${questions.length}`;
     }
 
     function addCoachBubble(text) {
-      const chatWindow = document.getElementById("chatWindow");
-
-      const wrap = document.createElement("div");
-      wrap.className = "chat-row coach-row";
-
-      const avatar = document.createElement("div");
-      avatar.className = "coach-avatar";
-      avatar.textContent = "🏃";
+      const row = document.createElement("div");
+      row.className = "imessage-row imessage-row-left";
 
       const bubble = document.createElement("div");
-      bubble.className = "chat-bubble coach-bubble";
-
-      // Handle newlines and links in text
+      bubble.className = "imessage-bubble imessage-bubble-coach";
       bubble.innerHTML = text
         .replace(/\n/g, "<br/>")
-        .replace(
-          /(https?:\/\/[^\s<]+)/g,
-          '<a href="$1" target="_blank" class="chat-link">$1</a>'
-        );
+        .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="imessage-link">$1</a>');
 
-      wrap.appendChild(avatar);
-      wrap.appendChild(bubble);
-      chatWindow.appendChild(wrap);
-
+      row.appendChild(bubble);
+      chatWindow.appendChild(row);
       chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
     function addUserBubble(text) {
-      const chatWindow = document.getElementById("chatWindow");
-
-      const wrap = document.createElement("div");
-      wrap.className = "chat-row user-row";
+      const row = document.createElement("div");
+      row.className = "imessage-row imessage-row-right";
 
       const bubble = document.createElement("div");
-      bubble.className = "chat-bubble user-bubble";
+      bubble.className = "imessage-bubble imessage-bubble-user";
       bubble.textContent = text;
 
-      wrap.appendChild(bubble);
-      chatWindow.appendChild(wrap);
-
+      row.appendChild(bubble);
+      chatWindow.appendChild(row);
       chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    function renderInput(question) {
-      const inputArea = document.getElementById("inputArea");
-      inputArea.innerHTML = "";
-
-      if (question.type === "choice") {
-        const grid = document.createElement("div");
-        grid.className = "choice-grid";
-
-        question.options.forEach(opt => {
-          const btn = document.createElement("button");
-          btn.className = "choice-btn";
-          btn.textContent = opt;
-          btn.onclick = () => submitAnswer(opt);
-          grid.appendChild(btn);
-        });
-
-        inputArea.appendChild(grid);
-
-      } else if (question.type === "text" || question.type === "multitext") {
-        if (question.type === "multitext") {
-          const optList = document.createElement("div");
-          optList.className = "multitext-options";
-          question.options.forEach(opt => {
-            const p = document.createElement("p");
-            p.className = "multitext-option";
-            p.textContent = opt;
-            optList.appendChild(p);
-          });
-          inputArea.appendChild(optList);
-        }
-
-        const row = document.createElement("div");
-        row.className = "text-input-row";
-
-        const input = document.createElement("input");
-        input.type = "text";
-        input.className = "field-input chat-text-input";
-        input.placeholder = question.placeholder || "Type your answer...";
-        input.id = "chatInput";
-
-        const btn = document.createElement("button");
-        btn.className = "chat-send-btn";
-        btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>`;
-        btn.onclick = () => submitAnswer(input.value.trim());
-
-        input.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") submitAnswer(input.value.trim());
-        });
-
-        row.appendChild(input);
-        row.appendChild(btn);
-        inputArea.appendChild(row);
-
-        setTimeout(() => input.focus(), 100);
-      }
-    }
-
-    function submitAnswer(value) {
+    function handleSend() {
+      const value = chatInput.value.trim();
       if (!value) return;
 
-      const question = questions[currentQuestion];
-      answers[question.id] = value;
-
+      chatInput.value = "";
       addUserBubble(value);
 
+      answers[questions[currentQuestion].id] = value;
       currentQuestion++;
       updateProgress();
 
@@ -349,41 +134,29 @@
       } else {
         setTimeout(() => {
           addCoachBubble(questions[currentQuestion].question);
-          renderInput(questions[currentQuestion]);
-        }, 600);
+          chatInput.focus();
+        }, 500);
       }
     }
 
-    // ============================================================
-    // FINISH — send to server and generate plan
-    // ============================================================
+    chatInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleSend();
+    });
+
     async function finishQuiz() {
-      const inputArea = document.getElementById("inputArea");
-      inputArea.innerHTML = "";
+      chatInput.disabled = true;
+      sendBtn.disabled = true;
 
-      addCoachBubble(
-        `Amazing work ${firstName}! I have everything I need. Give me a moment while I build your personalized training plan...`
-      );
+      addCoachBubble(`Amazing ${firstName}! Give me a moment while I build your personalized training plan... 🏃‍♂️`);
 
-      const loadingWrap = document.createElement("div");
-      loadingWrap.className = "chat-loading";
-      loadingWrap.innerHTML = `
-        <div class="loading-pulse">
-          <div class="pulse-ring"></div>
-          <div class="pulse-core">
-            <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
-              <path d="M7 18 L13 10 L17 15 L22 7" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        </div>
-        <p>Building your plan with AI...</p>
-      `;
-      document.getElementById("chatWindow").appendChild(loadingWrap);
-      document.getElementById("chatWindow").scrollTop = 99999;
+      const loadingRow = document.createElement("div");
+      loadingRow.className = "imessage-row imessage-row-left";
+      loadingRow.innerHTML = `<div class="imessage-typing"><span></span><span></span><span></span></div>`;
+      chatWindow.appendChild(loadingRow);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
 
       try {
         const token = localStorage.getItem("token");
-
         const res = await fetch("/api/onboarding", {
           method: "POST",
           headers: {
@@ -394,40 +167,34 @@
         });
 
         const data = await res.json();
-
         if (!res.ok) throw new Error(data.error);
 
-        loadingWrap.remove();
-        addCoachBubble(
-          `Your plan is ready ${firstName}! Let's get to work. 🏃‍♂️`
-        );
+        loadingRow.remove();
+        addCoachBubble(`Your plan is ready ${firstName}! Let's get to work. 💪`);
 
         setTimeout(() => {
           window.location.href = "training.html";
         }, 1500);
 
       } catch (err) {
-        loadingWrap.remove();
-        addCoachBubble(
-          `Sorry, something went wrong building your plan: ${err.message}. Please try again.`
-        );
+        loadingRow.remove();
+        addCoachBubble(`Sorry, something went wrong: ${err.message}. Please try again.`);
+        chatInput.disabled = false;
+        sendBtn.disabled = false;
 
-        const retryBtn = document.createElement("button");
-        retryBtn.className = "auth-btn";
-        retryBtn.textContent = "Try Again";
-        retryBtn.style.margin = "1rem auto";
-        retryBtn.style.display = "block";
-        retryBtn.onclick = finishQuiz;
-        document.getElementById("chatWindow").appendChild(retryBtn);
+        const retryRow = document.createElement("div");
+        retryRow.className = "imessage-row imessage-row-left";
+        retryRow.innerHTML = `<button class="auth-btn" style="margin:0.5rem 0" onclick="finishQuiz()">Try Again</button>`;
+        chatWindow.appendChild(retryRow);
       }
     }
 
-    // ============================================================
-    // START
-    // ============================================================
+    // Start
     updateProgress();
-    addCoachBubble(questions[0].question);
-    renderInput(questions[0]);
+    setTimeout(() => {
+      addCoachBubble(questions[0].question);
+      chatInput.focus();
+    }, 400);
   </script>
 
 </body>
