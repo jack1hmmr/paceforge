@@ -5,7 +5,14 @@ const jwt = require("jsonwebtoken");
 const { Pool } = require("pg");
 
 app.use(express.json());
-app.use(express.static(__dirname));
+app.use(express.static(__dirname, {
+  index: 'index.html'
+}));
+
+// Block server.js from being served
+app.get('/server.js', (req, res) => {
+  res.status(404).send('Not found');
+});
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "YOUR_OPENAI_API_KEY";
 const JWT_SECRET = process.env.JWT_SECRET || "paceforge_secret_key_change_this";
