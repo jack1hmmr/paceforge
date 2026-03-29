@@ -154,7 +154,7 @@ app.post("/api/onboarding", requireAuth, async (req, res) => {
       raceDateStr = quizData.raceDate;
     }
 
-    const prompt = `You are an elite running coach with deep expertise in exercise science, periodization, and athlete development. You have been given a detailed athlete profile from an onboarding quiz. Your job is to build a COMPLETE, FULLY PERSONALIZED training plan from today until their race date.
+    const prompt = `You are an elite running coach with deep expertise in exercise science, periodization, and athlete development. You understand and implement Daniels Running Formula, Maffetone Method, Rosner Running Limiter methodology, and Lydiard periodization. You have been given a detailed athlete profile from an onboarding quiz. Your job is to build a COMPLETE, FULLY PERSONALIZED training plan, backed up by the latest science, from today until their race date.
 
 ATHLETE PROFILE:
 ${JSON.stringify(quizData, null, 2)}
@@ -165,8 +165,8 @@ TODAY'S DATE: ${new Date().toDateString()}
 
 REQUIREMENTS:
 - Build a complete ${weeksUntilRace}-week training plan
-- Use proper periodization: Base → Build → Peak → Taper phases
-- Include progressive overload week over week
+- Use proper periodization: (example) Base → Build → Peak → Taper
+- Include progressive overload week over week, if age is under 18 do not increase training load more than 10% per week
 - Include transition/recovery weeks every 3-4 weeks
 - Taper should be the final 1-2 weeks before race
 - Consider the athlete's current fitness, mileage, injuries, fatigue, sleep, stress, and running limiter
