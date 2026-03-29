@@ -3,64 +3,71 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign Up — PaceForge</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230f0f0f' stroke='%23f4530c' stroke-width='6'/><path d='M25 65 L40 35 L55 52 L70 25' stroke='%23f4530c' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>" />
+  <title>Set Up — Training OS</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230B0F14' stroke='%232F80FF' stroke-width='6'/><path d='M25 65 L40 35 L55 52 L70 25' stroke='%232F80FF' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 </head>
-<body class="auth-page">
+<body class="dashboard-page">
 
-  <div class="grain"></div>
+  <div class="iphone-frame">
 
-  <nav class="topnav">
-    <a href="index.html" class="nav-logo">PACEFORGE</a>
-    <span class="nav-tagline">— AI Running Coach</span>
-  </nav>
+    <div class="iphone-notch">
+      <div class="iphone-notch-inner"></div>
+    </div>
 
-  <main class="auth-main">
+    <div class="iphone-screen">
+      <div class="screen active">
 
-    <div class="auth-card">
-      <p class="overline">Get started</p>
-      <h1 class="auth-title">CREATE YOUR<br/><em>ACCOUNT</em></h1>
-      <p class="auth-sub">You'll set up your training profile right after.</p>
+        <div class="setup-screen">
 
-      <div class="auth-form">
+          <div class="setup-screen-header">
+            <p class="setup-os-label">Training OS</p>
+            <h2 class="setup-screen-title">Create Your<br/>Account</h2>
+            <p class="setup-screen-sub">You'll set up your training profile right after.</p>
+          </div>
 
-        <div class="field-group">
-          <label class="field-label">Full Name</label>
-          <input class="field-input" type="text" id="name" placeholder="Alex Johnson" />
+          <div class="setup-form">
+
+            <div class="setup-field">
+              <label class="setup-field-label">Full Name</label>
+              <input class="setup-field-input" type="text" id="name" placeholder="Alex Johnson" autocomplete="off" />
+            </div>
+
+            <div class="setup-field">
+              <label class="setup-field-label">Age</label>
+              <input class="setup-field-input" type="number" id="age" placeholder="24" min="10" max="100" />
+            </div>
+
+            <div class="setup-field">
+              <label class="setup-field-label">Email</label>
+              <input class="setup-field-input" type="email" id="email" placeholder="alex@example.com" autocomplete="off" />
+            </div>
+
+            <div class="setup-field">
+              <label class="setup-field-label">Password</label>
+              <input class="setup-field-input" type="password" id="password" placeholder="At least 6 characters" />
+            </div>
+
+            <div class="setup-error hidden" id="setupError"></div>
+
+            <button class="setup-btn-primary" id="signupBtn" onclick="handleSignup()">Continue</button>
+
+            <a href="signin.html" class="setup-link">Already have an account? Sign in</a>
+
+          </div>
+
         </div>
-
-        <div class="field-group">
-          <label class="field-label">Age</label>
-          <input class="field-input" type="number" id="age" placeholder="24" min="10" max="100" />
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Email</label>
-          <input class="field-input" type="email" id="email" placeholder="alex@example.com" />
-        </div>
-
-        <div class="field-group">
-          <label class="field-label">Password</label>
-          <input class="field-input" type="password" id="password" placeholder="At least 6 characters" />
-        </div>
-
-        <div class="auth-error hidden" id="authError"></div>
-
-        <button class="auth-btn" id="signupBtn" onclick="handleSignup()">
-          Create Account
-        </button>
-
-        <p class="auth-switch">
-          Already have an account? <a href="signin.html">Sign in</a>
-        </p>
 
       </div>
     </div>
 
-  </main>
+    <div class="iphone-home-btn" onclick="window.location.href='index.html'">
+      <div class="iphone-home-btn-inner"></div>
+    </div>
+
+  </div>
 
   <script>
     async function handleSignup() {
@@ -69,16 +76,17 @@
       const email    = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
       const btn      = document.getElementById("signupBtn");
-      const errBox   = document.getElementById("authError");
-
-      errBox.classList.add("hidden");
 
       if (!name || !age || !email || !password) {
         showError("Please fill in all fields.");
         return;
       }
+      if (parseInt(age) < 10 || parseInt(age) > 100) {
+        showError("Please enter a valid age between 10 and 100.");
+        return;
+      }
 
-      btn.textContent = "Creating account…";
+      btn.textContent = "Setting up…";
       btn.disabled = true;
 
       try {
@@ -87,38 +95,30 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, age: parseInt(age), email, password })
         });
-
         const data = await res.json();
-
         if (!res.ok) {
           showError(data.error);
-          btn.textContent = "Create Account";
+          btn.textContent = "Continue";
           btn.disabled = false;
           return;
         }
-
-        // Save token and name to localStorage
         localStorage.setItem("token", data.token);
         localStorage.setItem("userName", data.name);
         localStorage.setItem("userId", data.id);
-
-        // Go to onboarding quiz
         window.location.href = "onboarding.html";
-
       } catch (err) {
         showError("Something went wrong. Please try again.");
-        btn.textContent = "Create Account";
+        btn.textContent = "Continue";
         btn.disabled = false;
       }
     }
 
     function showError(msg) {
-      const errBox = document.getElementById("authError");
-      errBox.textContent = msg;
-      errBox.classList.remove("hidden");
+      const el = document.getElementById("setupError");
+      el.textContent = msg;
+      el.classList.remove("hidden");
     }
 
-    // Allow pressing Enter to submit
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") handleSignup();
     });
