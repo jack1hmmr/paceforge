@@ -1,302 +1,130 @@
-const express = require("express");
-const app = express();
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const { Pool } = require("pg");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your Plan — PaceForge</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230B0F14' stroke='%232F80FF' stroke-width='6'/><path d='M25 65 L40 35 L55 52 L70 25' stroke='%232F80FF' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body class="training-page">
 
-app.use(express.json());
-app.use(express.static(__dirname));
+  <div class="grain"></div>
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "YOUR_OPENAI_API_KEY";
-const JWT_SECRET = process.env.JWT_SECRET || "paceforge_secret_key_change_this";
+  <nav class="topnav">
+    <a href="index.html" class="nav-back">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M14 9H4M4 9l5-5M4 9l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Back
+    </a>
+    <span class="nav-logo">PACEFORGE</span>
+    <div class="nav-badge" id="completedBadge">0% done</div>
+  </nav>
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
+  <main class="training-main">
 
-async function setupDatabase() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL,
-      age INTEGER NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+    <header class="plan-header">
+      <div class="plan-header-left">
+        <p class="overline">Your full training plan</p>
+        <h1 class="plan-title">TRAINING<br/><em>SCHEDULE</em></h1>
+      </div>
+      <div class="plan-meta" id="planMeta">
+        <div class="meta-item">
+          <span class="meta-label">Goal</span>
+          <span class="meta-value" id="metaGoal">—</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Race Date</span>
+          <span class="meta-value" id="metaRaceDate">—</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Total Weeks</span>
+          <span class="meta-value" id="metaTotalWeeks">—</span>
+        </div>
+      </div>
+    </header>
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS profiles (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER UNIQUE REFERENCES users(id),
-      quiz_data TEXT,
-      plan TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+    <div class="phase-bar hidden" id="phaseBar"></div>
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS workout_logs (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id),
-      week_number INTEGER,
-      day_name TEXT,
-      completed BOOLEAN DEFAULT FALSE,
-      completed_at TIMESTAMP,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+    <div class="week-nav hidden" id="weekNav">
+      <button class="week-nav-btn" id="prevWeek" onclick="changeWeek(-1)">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M11 4l-6 5 6 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="week-nav-center">
+        <span class="week-nav-label" id="weekLabel">Week 1</span>
+        <span class="week-nav-phase" id="weekPhase">Base</span>
+        <span class="week-nav-focus" id="weekFocus"></span>
+      </div>
+      <button class="week-nav-btn" id="nextWeek" onclick="changeWeek(1)">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M7 4l6 5-6 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
 
-  console.log("✅ Database ready");
-}
+    <div class="loading-state" id="loadingState">
+      <div class="loading-pulse">
+        <div class="pulse-ring"></div>
+        <div class="pulse-core">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M7 18 L13 10 L17 15 L22 7" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <p class="loading-title">Loading your plan…</p>
+      <p class="loading-sub">Grabbing your personalized training schedule</p>
+    </div>
 
-setupDatabase().catch(console.error);
+    <div class="error-state hidden" id="errorState">
+      <div class="error-icon">⚠️</div>
+      <p class="error-title">Couldn't load your plan</p>
+      <p class="error-sub" id="errorMessage">Check your connection and try again.</p>
+      <button class="retry-button" onclick="loadPlan()">Try Again</button>
+    </div>
 
-function requireAuth(req, res, next) {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) return res.status(401).json({ error: "Not logged in" });
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch {
-    res.status(401).json({ error: "Invalid or expired session" });
-  }
-}
+    <section class="plan-grid hidden" id="planGrid"></section>
 
-app.post("/api/signup", async (req, res) => {
-  try {
-    const { name, age, email, password } = req.body;
-    if (!name || !age || !email || !password)
-      return res.status(400).json({ error: "All fields are required" });
-    if (password.length < 6)
-      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    <div class="week-summary hidden" id="weekSummary">
+      <div class="summary-item">
+        <span class="summary-label">Total Miles</span>
+        <span class="summary-value" id="summaryMiles">—</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Workouts Done</span>
+        <span class="summary-value" id="summaryDone">0 / 7</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Phase</span>
+        <span class="summary-value" id="summaryPhase">—</span>
+      </div>
+    </div>
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const result = await pool.query(
-      "INSERT INTO users (name, age, email, password) VALUES ($1, $2, $3, $4) RETURNING *",
-      [name, age, email.toLowerCase(), hashedPassword]
-    );
-    const user = result.rows[0];
-    const token = jwt.sign(
-      { id: user.id, name: user.name, email: user.email },
-      JWT_SECRET,
-      { expiresIn: "30d" }
-    );
-    console.log(`✅ New user signed up: ${name}`);
-    res.json({ token, name: user.name, id: user.id });
-  } catch (error) {
-    if (error.code === "23505")
-      return res.status(400).json({ error: "An account with that email already exists" });
-    console.error("Signup error:", error.message);
-    res.status(500).json({ error: "Something went wrong. Please try again." });
-  }
-});
+    <div class="progress-section hidden" id="progressSection">
+      <div class="progress-header">
+        <span class="progress-label">Overall plan progress</span>
+        <span class="progress-count" id="progressCount">Week 1 of 12</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+    </div>
 
-app.post("/api/signin", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password)
-      return res.status(400).json({ error: "Email and password are required" });
+  </main>
 
-    const result = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
-      [email.toLowerCase()]
-    );
-    const user = result.rows[0];
-    if (!user)
-      return res.status(400).json({ error: "No account found with that email" });
+  <div class="toast hidden" id="toast">
+    <div class="toast-icon">✓</div>
+    <div class="toast-text">
+      <strong id="toastTitle">Workout complete!</strong>
+      <span id="toastSub">Great work. Keep the momentum going.</span>
+    </div>
+  </div>
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match)
-      return res.status(400).json({ error: "Incorrect password" });
+  <script src="app.js"></script>
 
-    const token = jwt.sign(
-      { id: user.id, name: user.name, email: user.email },
-      JWT_SECRET,
-      { expiresIn: "30d" }
-    );
-
-    const profile = await pool.query(
-      "SELECT * FROM profiles WHERE user_id = $1",
-      [user.id]
-    );
-    const hasCompletedOnboarding = !!(profile.rows[0]?.quiz_data);
-
-    console.log(`✅ User signed in: ${user.name}`);
-    res.json({ token, name: user.name, id: user.id, hasCompletedOnboarding });
-  } catch (error) {
-    console.error("Signin error:", error.message);
-    res.status(500).json({ error: "Something went wrong. Please try again." });
-  }
-});
-
-app.post("/api/onboarding", requireAuth, async (req, res) => {
-  try {
-    const quizData = req.body;
-    const userId = req.user.id;
-
-    console.log(`📋 Onboarding data received for user ${userId}`);
-
-    // Calculate weeks until race
-    let weeksUntilRace = 12;
-    let raceDateStr = "No specific race date";
-    if (quizData.raceDate && quizData.raceDate.toLowerCase() !== "skip") {
-      const raceDate = new Date(quizData.raceDate);
-      const today = new Date();
-      const diffTime = raceDate - today;
-      const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
-      weeksUntilRace = Math.max(4, Math.min(diffWeeks, 52));
-      raceDateStr = quizData.raceDate;
-    }
-
-    const prompt = `You are an elite running coach with deep expertise in exercise science, periodization, and athlete development. You have been given a detailed athlete profile from an onboarding quiz. Your job is to build a COMPLETE, FULLY PERSONALIZED training plan from today until their race date.
-
-ATHLETE PROFILE:
-${JSON.stringify(quizData, null, 2)}
-
-RACE DATE: ${raceDateStr}
-WEEKS UNTIL RACE: ${weeksUntilRace}
-TODAY'S DATE: ${new Date().toDateString()}
-
-REQUIREMENTS:
-- Build a complete ${weeksUntilRace}-week training plan
-- Use proper periodization: Base → Build → Peak → Taper phases
-- Include progressive overload week over week
-- Include transition/recovery weeks every 3-4 weeks
-- Taper should be the final 1-2 weeks before race
-- Consider the athlete's current fitness, mileage, injuries, fatigue, sleep, stress, and running limiter
-- Integrate cross training, lifting, and plyometrics where appropriate based on the athlete profile
-- If athlete has injuries or high fatigue, adjust intensity accordingly
-- If athlete is a beginner, start conservatively
-- Every workout must be specific and detailed — no generic descriptions
-- Rest days should still have a purpose (mobility, foam rolling, etc.)
-
-PLAN FORMAT — respond ONLY with this exact JSON, no explanation, no markdown:
-{
-  "totalWeeks": ${weeksUntilRace},
-  "raceDate": "${raceDateStr}",
-  "goal": "brief description of the athlete's goal",
-  "phases": [
-    { "name": "Base", "weekStart": 1, "weekEnd": 3 },
-    { "name": "Build", "weekStart": 4, "weekEnd": 8 },
-    { "name": "Peak", "weekStart": 9, "weekEnd": 11 },
-    { "name": "Taper", "weekStart": 12, "weekEnd": ${weeksUntilRace} }
-  ],
-  "weeks": [
-    {
-      "week": 1,
-      "phase": "Base",
-      "focus": "brief focus for this week",
-      "totalMiles": 20,
-      "days": [
-        { "name": "Monday", "type": "Easy Run", "workout": "detailed workout description" },
-        { "name": "Tuesday", "type": "Rest", "workout": "detailed recovery description" },
-        { "name": "Wednesday", "type": "Workout", "workout": "detailed workout description" },
-        { "name": "Thursday", "type": "Easy Run", "workout": "detailed workout description" },
-        { "name": "Friday", "type": "Cross Training", "workout": "detailed workout description" },
-        { "name": "Saturday", "type": "Long Run", "workout": "detailed workout description" },
-        { "name": "Sunday", "type": "Rest", "workout": "detailed recovery description" }
-      ]
-    }
-  ]
-}`;
-
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        max_tokens: 16000,
-        messages: [{ role: "user", content: prompt }]
-      })
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error?.message || "OpenAI API error");
-    }
-
-    const data = await response.json();
-    let rawText = data.choices[0].message.content.trim();
-    rawText = rawText.replace(/```json|```/g, "").trim();
-    const plan = JSON.parse(rawText);
-
-    const existing = await pool.query(
-      "SELECT * FROM profiles WHERE user_id = $1", [userId]
-    );
-
-    if (existing.rows.length > 0) {
-      await pool.query(
-        "UPDATE profiles SET quiz_data = $1, plan = $2 WHERE user_id = $3",
-        [JSON.stringify(quizData), JSON.stringify(plan), userId]
-      );
-    } else {
-      await pool.query(
-        "INSERT INTO profiles (user_id, quiz_data, plan) VALUES ($1, $2, $3)",
-        [userId, JSON.stringify(quizData), JSON.stringify(plan)]
-      );
-    }
-
-    console.log(`✅ Full ${weeksUntilRace}-week plan generated for user ${userId}`);
-    res.json({ plan });
-
-  } catch (error) {
-    console.error("Onboarding error:", error.message);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get("/api/plan", requireAuth, async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT * FROM profiles WHERE user_id = $1", [req.user.id]
-    );
-    const profile = result.rows[0];
-    if (!profile || !profile.plan)
-      return res.status(404).json({ error: "No plan found" });
-    res.json(JSON.parse(profile.plan));
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post("/api/log-workout", requireAuth, async (req, res) => {
-  try {
-    const { weekNumber, dayName } = req.body;
-    const userId = req.user.id;
-
-    await pool.query(
-      `INSERT INTO workout_logs (user_id, week_number, day_name, completed, completed_at)
-       VALUES ($1, $2, $3, true, NOW())
-       ON CONFLICT DO NOTHING`,
-      [userId, weekNumber, dayName]
-    );
-
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get("/api/workout-logs", requireAuth, async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT week_number, day_name FROM workout_logs WHERE user_id = $1 AND completed = true",
-      [req.user.id]
-    );
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🏃 PaceForge server running on port ${PORT}`);
-});
+</body>
+</html>
