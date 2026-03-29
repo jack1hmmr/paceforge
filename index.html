@@ -3,116 +3,53 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PaceForge — AI Running Coach</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230f0f0f' stroke='%23f4530c' stroke-width='6'/><path d='M25 65 L40 35 L55 52 L70 25' stroke='%23f4530c' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>" />
+  <title>PaceForge — Training OS</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%230B0F14' stroke='%232F80FF' stroke-width='6'/><path d='M25 65 L40 35 L55 52 L70 25' stroke='%232F80FF' stroke-width='7' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 </head>
-<body class="home-page">
+<body class="dashboard-page">
 
-  <div class="grain"></div>
+  <div class="iphone-frame">
 
-  <nav class="topnav">
-    <span class="nav-logo">PACEFORGE</span>
-    <span class="nav-tagline">— AI Running Coach</span>
-  </nav>
-
-  <main class="home-main">
-
-    <div class="hero-left">
-      <p class="overline">AI-powered training</p>
-      <h1 class="home-title">YOUR WEEK.<br/><em>BUILT BY AI.</em></h1>
-      <p class="home-subtitle">
-        Sign in or sign up and then finish the quiz to generate your personalized training plan.
-      </p>
-
-      <div class="auth-buttons">
-        <a href="signup.html" class="btn-signup">Sign Up — It's Free</a>
-        <a href="signin.html" class="btn-signin">Sign In</a>
-      </div>
-      <p class="home-disclaimer">No credit card needed. Coming soon.</p>
+    <div class="iphone-notch">
+      <div class="iphone-notch-inner"></div>
     </div>
 
-    <div class="hero-right">
-      <div class="preview-card">
+    <div class="iphone-screen">
+      <div class="screen active" id="screenHello">
 
-        <div class="preview-header">
-          <span class="preview-label">YOUR WEEKLY PLAN</span>
-          <span class="preview-goal">Goal: sub 19 5k</span>
+        <!-- Background -->
+        <div class="lock-bg"></div>
+
+        <!-- Hello content -->
+        <div class="setup-hello">
+          <p class="setup-os-label">Training OS</p>
+          <h1 class="setup-hello-text">Hello.</h1>
+          <p class="setup-tagline">Your AI-powered running coach</p>
         </div>
 
-        <div class="preview-days">
-
-          <div class="preview-day completed">
-            <div class="preview-day-label">
-              <span class="preview-day-name">MON</span>
-            </div>
-            <span class="preview-day-workout">Easy recovery run — 3 miles at conversational pace</span>
-            <span class="preview-done">✓</span>
-          </div>
-
-          <div class="preview-day completed">
-            <div class="preview-day-label">
-              <span class="preview-day-name">TUE</span>
-            </div>
-            <span class="preview-day-workout">Intervals — 6×400m at goal 5K pace</span>
-            <span class="preview-done">✓</span>
-          </div>
-
-          <div class="preview-day completed">
-            <div class="preview-day-label">
-              <span class="preview-day-name">WED</span>
-            </div>
-            <span class="preview-day-workout">Rest day — 20 min easy walk</span>
-            <span class="preview-done">✓</span>
-          </div>
-
-          <div class="preview-day active">
-            <div class="preview-day-label">
-              <span class="preview-day-name">THU</span>
-            </div>
-            <span class="preview-day-workout">Tempo run — 2mi warm up, 3mi at hard pace</span>
-            <span class="preview-today">Today</span>
-          </div>
-
-          <div class="preview-day">
-            <div class="preview-day-label">
-              <span class="preview-day-name">FRI</span>
-            </div>
-            <span class="preview-day-workout">Easy 4 miles with 6 strides at the end</span>
-            <span class="preview-upcoming">—</span>
-          </div>
-
-          <div class="preview-day">
-            <div class="preview-day-label">
-              <span class="preview-day-name">SAT</span>
-            </div>
-            <span class="preview-day-workout">Long run — 8 miles at easy pace</span>
-            <span class="preview-upcoming">—</span>
-          </div>
-
-          <div class="preview-day">
-            <div class="preview-day-label">
-              <span class="preview-day-name">SUN</span>
-            </div>
-            <span class="preview-day-workout">Complete rest. Stretch and foam roll.</span>
-            <span class="preview-upcoming">—</span>
-          </div>
-
-        </div>
-
-        <div class="preview-progress">
-          <span class="preview-progress-label">3 of 7 workouts done</span>
-          <div class="preview-progress-track">
-            <div class="preview-progress-fill" style="width: 43%"></div>
-          </div>
+        <!-- Bottom buttons -->
+        <div class="setup-bottom">
+          <a href="signup.html" class="setup-btn-primary">Get Started</a>
+          <a href="signin.html" class="setup-btn-secondary">Sign In</a>
         </div>
 
       </div>
     </div>
 
-  </main>
+    <div class="iphone-home-btn" onclick="window.location.href='signup.html'">
+      <div class="iphone-home-btn-inner"></div>
+    </div>
+
+  </div>
+
+  <script>
+    if (localStorage.getItem("token")) {
+      window.location.href = "dashboard.html";
+    }
+  </script>
 
 </body>
 </html>
