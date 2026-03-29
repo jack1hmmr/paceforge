@@ -9,39 +9,42 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 </head>
-<body class="onboarding-page onboarding-bg">
+<body class="onboarding-page">
 
-  <div class="grain"></div>
+  <!-- Phone frame -->
+  <div class="onboarding-phone">
 
-  <!-- Top bar -->
-  <div class="imessage-topbar">
-    <div class="imessage-avatar">🏃</div>
-    <div class="imessage-contact">
-      <span class="imessage-name">PaceForge Coach</span>
-      <span class="imessage-status">Building your plan</span>
+    <!-- Top bar -->
+    <div class="imessage-topbar">
+      <div class="imessage-avatar">🏃</div>
+      <div class="imessage-contact">
+        <span class="imessage-name">PaceForge Coach</span>
+        <span class="imessage-status">Building your plan</span>
+      </div>
+      <div class="imessage-progress-wrap">
+        <div class="imessage-progress-bar" id="progressBar"></div>
+      </div>
     </div>
-    <div class="imessage-progress-wrap">
-      <div class="imessage-progress-bar" id="progressBar"></div>
+
+    <!-- Chat window -->
+    <main class="imessage-main" id="chatWindow"></main>
+
+    <!-- Input bar -->
+    <div class="imessage-inputbar">
+      <input
+        type="text"
+        class="imessage-input"
+        id="chatInput"
+        placeholder="iMessage"
+        autocomplete="off"
+      />
+      <button class="imessage-send" id="sendBtn" onclick="handleSend()">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M9 15V3M9 3L4 8M9 3L14 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
     </div>
-  </div>
 
-  <!-- Chat window -->
-  <main class="imessage-main" id="chatWindow"></main>
-
-  <!-- Input bar -->
-  <div class="imessage-inputbar">
-    <input
-      type="text"
-      class="imessage-input"
-      id="chatInput"
-      placeholder="iMessage"
-      autocomplete="off"
-    />
-    <button class="imessage-send" id="sendBtn" onclick="handleSend()">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <path d="M9 15V3M9 3L4 8M9 3L14 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </button>
   </div>
 
   <script>
@@ -82,8 +85,8 @@
     const answers = {};
 
     const chatWindow = document.getElementById("chatWindow");
-    const chatInput = document.getElementById("chatInput");
-    const sendBtn = document.getElementById("sendBtn");
+    const chatInput  = document.getElementById("chatInput");
+    const sendBtn    = document.getElementById("sendBtn");
 
     function updateProgress() {
       const pct = (currentQuestion / questions.length) * 100;
@@ -93,13 +96,11 @@
     function addCoachBubble(text) {
       const row = document.createElement("div");
       row.className = "imessage-row imessage-row-left";
-
       const bubble = document.createElement("div");
       bubble.className = "imessage-bubble imessage-bubble-coach";
       bubble.innerHTML = text
         .replace(/\n/g, "<br/>")
         .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" class="imessage-link">$1</a>');
-
       row.appendChild(bubble);
       chatWindow.appendChild(row);
       chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -108,11 +109,9 @@
     function addUserBubble(text) {
       const row = document.createElement("div");
       row.className = "imessage-row imessage-row-right";
-
       const bubble = document.createElement("div");
       bubble.className = "imessage-bubble imessage-bubble-user";
       bubble.textContent = text;
-
       row.appendChild(bubble);
       chatWindow.appendChild(row);
       chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -121,14 +120,11 @@
     function handleSend() {
       const value = chatInput.value.trim();
       if (!value) return;
-
       chatInput.value = "";
       addUserBubble(value);
-
       answers[questions[currentQuestion].id] = value;
       currentQuestion++;
       updateProgress();
-
       if (currentQuestion >= questions.length) {
         finishQuiz();
       } else {
@@ -146,7 +142,6 @@
     async function finishQuiz() {
       chatInput.disabled = true;
       sendBtn.disabled = true;
-
       addCoachBubble(`Amazing ${firstName}! Give me a moment while I build your personalized training plan... 🏃‍♂️`);
 
       const loadingRow = document.createElement("div");
@@ -165,31 +160,19 @@
           },
           body: JSON.stringify(answers)
         });
-
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-
         loadingRow.remove();
         addCoachBubble(`Your plan is ready ${firstName}! Let's get to work. 💪`);
-
-        setTimeout(() => {
-          window.location.href = "training.html";
-        }, 1500);
-
+        setTimeout(() => { window.location.href = "training.html"; }, 1500);
       } catch (err) {
         loadingRow.remove();
         addCoachBubble(`Sorry, something went wrong: ${err.message}. Please try again.`);
         chatInput.disabled = false;
         sendBtn.disabled = false;
-
-        const retryRow = document.createElement("div");
-        retryRow.className = "imessage-row imessage-row-left";
-        retryRow.innerHTML = `<button class="auth-btn" style="margin:0.5rem 0" onclick="finishQuiz()">Try Again</button>`;
-        chatWindow.appendChild(retryRow);
       }
     }
 
-    // Start
     updateProgress();
     setTimeout(() => {
       addCoachBubble(questions[0].question);
