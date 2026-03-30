@@ -1282,7 +1282,7 @@ a {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-image: url('wall.png');
+  background-image: url('bg.png');
   background-size: cover;
   background-position: center;
   padding: 2rem;
