@@ -47,6 +47,28 @@ async function setupDatabase() {
       day_name TEXT,
       completed BOOLEAN DEFAULT FALSE,
       completed_at TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, week_number, day_name)
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS prs (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      distance TEXT,
+      time TEXT,
+      notes TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS coach_messages (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -68,6 +90,9 @@ function requireAuth(req, res, next) {
   }
 }
 
+// ============================================================
+// SIGN UP
+// ============================================================
 app.post("/api/signup", async (req, res) => {
   try {
     const { name, age, email, password } = req.body;
@@ -97,6 +122,9 @@ app.post("/api/signup", async (req, res) => {
   }
 });
 
+// ============================================================
+// SIGN IN
+// ============================================================
 app.post("/api/signin", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -135,6 +163,9 @@ app.post("/api/signin", async (req, res) => {
   }
 });
 
+// ============================================================
+// ONBOARDING — generate full plan
+// ============================================================
 app.post("/api/onboarding", requireAuth, async (req, res) => {
   try {
     const quizData = req.body;
@@ -142,7 +173,6 @@ app.post("/api/onboarding", requireAuth, async (req, res) => {
 
     console.log(`📋 Onboarding data received for user ${userId}`);
 
-    // Calculate weeks until race
     let weeksUntilRace = 12;
     let raceDateStr = "No specific race date";
     if (quizData.raceDate && quizData.raceDate.toLowerCase() !== "skip") {
@@ -154,7 +184,13 @@ app.post("/api/onboarding", requireAuth, async (req, res) => {
       raceDateStr = quizData.raceDate;
     }
 
-    const prompt = `You are an elite running coach with deep expertise in exercise science, periodization, and athlete development. You understand and implement Daniels Running Formula, Maffetone Method, Rosner Running Limiter methodology, and Lydiard periodization. You have been given a detailed athlete profile from an onboarding quiz. Your job is to build a COMPLETE, FULLY PERSONALIZED training plan, backed up by the latest science, from today until their race date.
+    // Calculate phase boundaries dynamically
+    const baseEnd = Math.floor(weeksUntilRace * 0.25);
+    const buildEnd = Math.floor(weeksUntilRace * 0.65);
+    const peakEnd = Math.floor(weeksUntilRace * 0.85);
+    const taperEnd = weeksUntilRace;
+
+    const prompt = `You are an elite running coach with deep expertise in exercise science, periodization, and athlete development. You have been given a detailed athlete profile from an onboarding quiz. Your job is to build a COMPLETE, FULLY PERSONALIZED training plan from today until their race date.
 
 ATHLETE PROFILE:
 ${JSON.stringify(quizData, null, 2)}
@@ -165,27 +201,31 @@ TODAY'S DATE: ${new Date().toDateString()}
 
 REQUIREMENTS:
 - Build a complete ${weeksUntilRace}-week training plan
-- Use proper periodization: (example) Base → Build → Peak → Taper
-- Include progressive overload week over week, if age is under 18 do not increase training load more than 10% per week
+- Use proper periodization: Base → Build → Peak → Taper phases
+- Base phase: weeks 1-${baseEnd}
+- Build phase: weeks ${baseEnd + 1}-${buildEnd}
+- Peak phase: weeks ${buildEnd + 1}-${peakEnd}
+- Taper phase: weeks ${peakEnd + 1}-${taperEnd}
+- Include progressive overload week over week
 - Include transition/recovery weeks every 3-4 weeks
 - Taper should be the final 1-2 weeks before race
 - Consider the athlete's current fitness, mileage, injuries, fatigue, sleep, stress, and running limiter
-- Integrate cross training, lifting, and plyometrics where appropriate based on the athlete profile
+- Integrate cross training, lifting, and plyometrics where appropriate
 - If athlete has injuries or high fatigue, adjust intensity accordingly
 - If athlete is a beginner, start conservatively
 - Every workout must be specific and detailed — no generic descriptions
 - Rest days should still have a purpose (mobility, foam rolling, etc.)
 
-PLAN FORMAT — respond ONLY with this exact JSON, no explanation, no markdown:
+Respond ONLY with this exact JSON, no explanation, no markdown:
 {
   "totalWeeks": ${weeksUntilRace},
   "raceDate": "${raceDateStr}",
   "goal": "brief description of the athlete's goal",
   "phases": [
-    { "name": "Base", "weekStart": 1, "weekEnd": 3 },
-    { "name": "Build", "weekStart": 4, "weekEnd": 8 },
-    { "name": "Peak", "weekStart": 9, "weekEnd": 11 },
-    { "name": "Taper", "weekStart": 12, "weekEnd": ${weeksUntilRace} }
+    { "name": "Base", "weekStart": 1, "weekEnd": ${baseEnd} },
+    { "name": "Build", "weekStart": ${baseEnd + 1}, "weekEnd": ${buildEnd} },
+    { "name": "Peak", "weekStart": ${buildEnd + 1}, "weekEnd": ${peakEnd} },
+    { "name": "Taper", "weekStart": ${peakEnd + 1}, "weekEnd": ${taperEnd} }
   ],
   "weeks": [
     {
@@ -254,6 +294,9 @@ PLAN FORMAT — respond ONLY with this exact JSON, no explanation, no markdown:
   }
 });
 
+// ============================================================
+// GET PLAN
+// ============================================================
 app.get("/api/plan", requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
@@ -268,6 +311,9 @@ app.get("/api/plan", requireAuth, async (req, res) => {
   }
 });
 
+// ============================================================
+// LOG WORKOUT
+// ============================================================
 app.post("/api/log-workout", requireAuth, async (req, res) => {
   try {
     const { weekNumber, dayName } = req.body;
@@ -276,7 +322,7 @@ app.post("/api/log-workout", requireAuth, async (req, res) => {
     await pool.query(
       `INSERT INTO workout_logs (user_id, week_number, day_name, completed, completed_at)
        VALUES ($1, $2, $3, true, NOW())
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT (user_id, week_number, day_name) DO NOTHING`,
       [userId, weekNumber, dayName]
     );
 
@@ -286,6 +332,9 @@ app.post("/api/log-workout", requireAuth, async (req, res) => {
   }
 });
 
+// ============================================================
+// GET WORKOUT LOGS
+// ============================================================
 app.get("/api/workout-logs", requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
@@ -298,6 +347,112 @@ app.get("/api/workout-logs", requireAuth, async (req, res) => {
   }
 });
 
+// ============================================================
+// AI COACH CHAT
+// ============================================================
+const coachHistory = {};
+
+app.post("/api/coach", requireAuth, async (req, res) => {
+  try {
+    const { message } = req.body;
+    const userId = req.user.id;
+
+    const profileResult = await pool.query(
+      "SELECT quiz_data, plan FROM profiles WHERE user_id = $1",
+      [userId]
+    );
+
+    const profile = profileResult.rows[0];
+    const quizData = profile?.quiz_data ? JSON.parse(profile.quiz_data) : {};
+    const plan = profile?.plan ? JSON.parse(profile.plan) : {};
+
+    if (!coachHistory[userId]) coachHistory[userId] = [];
+    coachHistory[userId].push({ role: "user", content: message });
+    if (coachHistory[userId].length > 10) {
+      coachHistory[userId] = coachHistory[userId].slice(-10);
+    }
+
+    const injuryKeywords = ["hurt", "pain", "injury", "injured", "sore", "strain", "sprain", "pulled", "torn", "ache"];
+    const prKeywords = ["pr", "personal record", "personal best", "pb", "new record", "fastest"];
+    const hasInjury = injuryKeywords.some(k => message.toLowerCase().includes(k));
+    const hasPR = prKeywords.some(k => message.toLowerCase().includes(k));
+
+    const systemPrompt = `You are an elite AI running coach for PaceForge. You are science-backed, evidence-based, and deeply knowledgeable about exercise science, periodization, injury prevention, and athletic development.
+
+ATHLETE PROFILE:
+${JSON.stringify(quizData, null, 2)}
+
+CURRENT TRAINING PLAN:
+- Goal: ${plan.goal || "Not set"}
+- Total Weeks: ${plan.totalWeeks || "Unknown"}
+- Race Date: ${plan.raceDate || "Not set"}
+
+RULES:
+- Only give science-backed advice
+- Be conversational but professional — like a real coach texting their athlete
+- Keep responses concise — this is a chat not an essay
+- If the athlete mentions an injury ask clarifying questions and offer to adjust their plan
+- If the athlete mentions a PR celebrate it and ask for details
+- Never recommend anything that could cause harm
+- Always consider the athlete's fatigue, sleep, and stress from their profile
+${hasInjury ? "- The athlete may be injured. Be cautious and consider plan modifications." : ""}
+${hasPR ? "- The athlete may have set a PR. Ask for details to log it." : ""}`;
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        max_tokens: 300,
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...coachHistory[userId]
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || "OpenAI API error");
+    }
+
+    const data = await response.json();
+    const reply = data.choices[0].message.content.trim();
+
+    coachHistory[userId].push({ role: "assistant", content: reply });
+
+    if (hasPR) {
+      console.log(`🏆 PR detected for user ${userId}`);
+    }
+
+    console.log(`💬 Coach reply sent to user ${userId}`);
+    res.json({ reply, hasInjury, hasPR });
+
+  } catch (error) {
+    console.error("Coach error:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================
+// GET COACH HISTORY
+// ============================================================
+app.get("/api/coach-history", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const history = coachHistory[userId] || [];
+    res.json(history);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================
+// START SERVER
+// ============================================================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`🏃 PaceForge server running on port ${PORT}`);
