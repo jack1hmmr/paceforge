@@ -28,7 +28,6 @@ async function setupDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
-
   await pool.query(`
     CREATE TABLE IF NOT EXISTS profiles (
       id SERIAL PRIMARY KEY,
@@ -38,7 +37,6 @@ async function setupDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
-
   await pool.query(`
     CREATE TABLE IF NOT EXISTS workout_logs (
       id SERIAL PRIMARY KEY,
@@ -51,7 +49,6 @@ async function setupDatabase() {
       UNIQUE(user_id, week_number, day_name)
     )
   `);
-
   await pool.query(`
     CREATE TABLE IF NOT EXISTS prs (
       id SERIAL PRIMARY KEY,
@@ -62,7 +59,6 @@ async function setupDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
-
   await pool.query(`
     CREATE TABLE IF NOT EXISTS coach_messages (
       id SERIAL PRIMARY KEY,
@@ -72,7 +68,6 @@ async function setupDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
-
   console.log("✅ Database ready");
 }
 
@@ -164,7 +159,7 @@ app.post("/api/signin", async (req, res) => {
 });
 
 // ============================================================
-// ONBOARDING — generate full plan
+// ONBOARDING
 // ============================================================
 app.post("/api/onboarding", requireAuth, async (req, res) => {
   try {
@@ -184,13 +179,12 @@ app.post("/api/onboarding", requireAuth, async (req, res) => {
       raceDateStr = quizData.raceDate;
     }
 
-    // Calculate phase boundaries dynamically
     const baseEnd = Math.floor(weeksUntilRace * 0.25);
     const buildEnd = Math.floor(weeksUntilRace * 0.65);
     const peakEnd = Math.floor(weeksUntilRace * 0.85);
     const taperEnd = weeksUntilRace;
 
-    const prompt = `You are an elite running coach with deep expertise in exercise science, periodization, and athlete development. You have been given a detailed athlete profile from an onboarding quiz. Your job is to build a COMPLETE, FULLY PERSONALIZED training plan from today until their race date.
+    const prompt = `You are an elite running coach with deep expertise in exercise science, periodization, and athlete development. Build a COMPLETE, FULLY PERSONALIZED training plan from today until the race date.
 
 ATHLETE PROFILE:
 ${JSON.stringify(quizData, null, 2)}
@@ -201,20 +195,16 @@ TODAY'S DATE: ${new Date().toDateString()}
 
 REQUIREMENTS:
 - Build a complete ${weeksUntilRace}-week training plan
-- Use proper periodization: Base → Build → Peak → Taper phases
 - Base phase: weeks 1-${baseEnd}
 - Build phase: weeks ${baseEnd + 1}-${buildEnd}
 - Peak phase: weeks ${buildEnd + 1}-${peakEnd}
 - Taper phase: weeks ${peakEnd + 1}-${taperEnd}
 - Include progressive overload week over week
 - Include transition/recovery weeks every 3-4 weeks
-- Taper should be the final 1-2 weeks before race
-- Consider the athlete's current fitness, mileage, injuries, fatigue, sleep, stress, and running limiter
+- Consider the athlete's fitness, mileage, injuries, fatigue, sleep, stress, and running limiter
 - Integrate cross training, lifting, and plyometrics where appropriate
-- If athlete has injuries or high fatigue, adjust intensity accordingly
-- If athlete is a beginner, start conservatively
-- Every workout must be specific and detailed — no generic descriptions
-- Rest days should still have a purpose (mobility, foam rolling, etc.)
+- Every workout must be specific and detailed
+- Rest days should have a purpose (mobility, foam rolling, etc.)
 
 Respond ONLY with this exact JSON, no explanation, no markdown:
 {
@@ -318,14 +308,12 @@ app.post("/api/log-workout", requireAuth, async (req, res) => {
   try {
     const { weekNumber, dayName } = req.body;
     const userId = req.user.id;
-
     await pool.query(
       `INSERT INTO workout_logs (user_id, week_number, day_name, completed, completed_at)
        VALUES ($1, $2, $3, true, NOW())
        ON CONFLICT (user_id, week_number, day_name) DO NOTHING`,
       [userId, weekNumber, dayName]
     );
-
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -343,6 +331,46 @@ app.get("/api/workout-logs", requireAuth, async (req, res) => {
     );
     res.json(result.rows);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================================
+// UPDATE PLAN — coach proposed change
+// ============================================================
+app.post("/api/update-plan", requireAuth, async (req, res) => {
+  try {
+    const { weekNumber, dayIndex, newWorkout, newType } = req.body;
+    const userId = req.user.id;
+
+    const profileResult = await pool.query(
+      "SELECT plan FROM profiles WHERE user_id = $1",
+      [userId]
+    );
+
+    const profile = profileResult.rows[0];
+    if (!profile || !profile.plan)
+      return res.status(404).json({ error: "No plan found" });
+
+    const plan = JSON.parse(profile.plan);
+    const week = plan.weeks.find(w => w.week === weekNumber);
+    if (!week) return res.status(404).json({ error: "Week not found" });
+
+    if (week.days[dayIndex]) {
+      week.days[dayIndex].workout = newWorkout;
+      if (newType) week.days[dayIndex].type = newType;
+    }
+
+    await pool.query(
+      "UPDATE profiles SET plan = $1 WHERE user_id = $2",
+      [JSON.stringify(plan), userId]
+    );
+
+    console.log(`✅ Plan updated for user ${userId} — Week ${weekNumber}, Day ${dayIndex}`);
+    res.json({ success: true, plan });
+
+  } catch (error) {
+    console.error("Update plan error:", error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -386,16 +414,20 @@ CURRENT TRAINING PLAN:
 - Goal: ${plan.goal || "Not set"}
 - Total Weeks: ${plan.totalWeeks || "Unknown"}
 - Race Date: ${plan.raceDate || "Not set"}
+- Current weeks: ${JSON.stringify(plan.weeks?.slice(0, 3) || [])}
 
 RULES:
 - Only give science-backed advice
 - Be conversational but professional — like a real coach texting their athlete
 - Keep responses concise — this is a chat not an essay
-- If the athlete mentions an injury ask clarifying questions and offer to adjust their plan
+- If the athlete mentions an injury ask clarifying questions
+- If you want to propose a plan change, end your message with this on a new line:
+  PLAN_CHANGE:{"week":1,"dayIndex":2,"workout":"New workout description","type":"Rest"}
+- Only suggest one change at a time
 - If the athlete mentions a PR celebrate it and ask for details
 - Never recommend anything that could cause harm
 - Always consider the athlete's fatigue, sleep, and stress from their profile
-${hasInjury ? "- The athlete may be injured. Be cautious and consider plan modifications." : ""}
+${hasInjury ? "- The athlete may be injured. Consider proposing a plan modification using PLAN_CHANGE." : ""}
 ${hasPR ? "- The athlete may have set a PR. Ask for details to log it." : ""}`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -406,7 +438,7 @@ ${hasPR ? "- The athlete may have set a PR. Ask for details to log it." : ""}`;
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        max_tokens: 300,
+        max_tokens: 400,
         messages: [
           { role: "system", content: systemPrompt },
           ...coachHistory[userId]
@@ -420,16 +452,25 @@ ${hasPR ? "- The athlete may have set a PR. Ask for details to log it." : ""}`;
     }
 
     const data = await response.json();
-    const reply = data.choices[0].message.content.trim();
+    let reply = data.choices[0].message.content.trim();
+    let planChange = null;
+
+    if (reply.includes("PLAN_CHANGE:")) {
+      const parts = reply.split("PLAN_CHANGE:");
+      reply = parts[0].trim();
+      try {
+        planChange = JSON.parse(parts[1].trim());
+      } catch(e) {
+        planChange = null;
+      }
+    }
 
     coachHistory[userId].push({ role: "assistant", content: reply });
 
-    if (hasPR) {
-      console.log(`🏆 PR detected for user ${userId}`);
-    }
-
+    if (hasPR) console.log(`🏆 PR detected for user ${userId}`);
     console.log(`💬 Coach reply sent to user ${userId}`);
-    res.json({ reply, hasInjury, hasPR });
+
+    res.json({ reply, hasInjury, hasPR, planChange });
 
   } catch (error) {
     console.error("Coach error:", error.message);
