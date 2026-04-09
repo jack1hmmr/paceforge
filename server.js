@@ -424,6 +424,8 @@ RULES:
 - If you want to propose a plan change, end your message with this on a new line:
   PLAN_CHANGE:{"week":1,"dayIndex":2,"workout":"New workout description","type":"Rest"}
 - Only suggest one change at a time
+- IMPORTANT: Only send PLAN_CHANGE if there's a real reason. Do NOT send it by default.
+- Format it EXACTLY as shown. Do not add extra text after PLAN_CHANGE.
 - If the athlete mentions a PR celebrate it and ask for details
 - Never recommend anything that could cause harm
 - Always consider the athlete's fatigue, sleep, and stress from their profile
@@ -451,19 +453,16 @@ ${hasPR ? "- The athlete may have set a PR. Ask for details to log it." : ""}`;
       throw new Error(err.error?.message || "OpenAI API error");
     }
 
-    const data = await response.json();
-    let reply = data.choices[0].message.content.trim();
-    let planChange = null;
-
-    if (reply.includes("PLAN_CHANGE:")) {
-      const parts = reply.split("PLAN_CHANGE:");
-      reply = parts[0].trim();
-      try {
-        planChange = JSON.parse(parts[1].trim());
-      } catch(e) {
-        planChange = null;
-      }
-    }
+   if (reply.includes("PLAN_CHANGE:")) {
+  const parts = reply.split("PLAN_CHANGE:");
+  reply = parts[0].trim();
+  try {
+    planChange = JSON.parse(parts[1].trim());
+  } catch(e) {
+    console.error("Failed to parse PLAN_CHANGE:", parts[1]);
+    planChange = null;
+  }
+}
 
     coachHistory[userId].push({ role: "assistant", content: reply });
 
