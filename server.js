@@ -238,6 +238,8 @@ Output ONLY this JSON format, nothing else:
 
 ATHLETE PROFILE:
 ${JSON.stringify(quizData, null, 2)}
+...rest of prompt...
+`;
 
 RACE DATE: ${raceDateStr}
 WEEKS UNTIL RACE: ${weeksUntilRace}
