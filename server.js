@@ -184,7 +184,57 @@ app.post("/api/onboarding", requireAuth, async (req, res) => {
     const peakEnd = Math.floor(weeksUntilRace * 0.85);
     const taperEnd = weeksUntilRace;
 
-    const prompt = `You are an elite running coach with deep expertise in exercise science, periodization, and athlete development. Build a COMPLETE, FULLY PERSONALIZED training plan from today until the race date.
+    const prompt = `You are an elite running coach. Generate ONLY valid JSON output, no other text.
+
+ATHLETE PROFILE:
+${JSON.stringify(quizData, null, 2)}
+
+RACE DATE: ${raceDateStr}
+WEEKS UNTIL RACE: ${weeksUntilRace}
+TODAY'S DATE: ${new Date().toDateString()}
+
+Build a complete ${weeksUntilRace}-week training plan with:
+- Base phase: weeks 1-${baseEnd}
+- Build phase: weeks ${baseEnd + 1}-${buildEnd}
+- Peak phase: weeks ${buildEnd + 1}-${peakEnd}
+- Taper phase: weeks ${peakEnd + 1}-${taperEnd}
+- Progressive overload week over week
+- Recovery weeks every 3-4 weeks
+- Consider fitness, mileage, injuries, fatigue, sleep, stress
+- Cross training, lifting, plyometrics where appropriate
+- Specific, detailed workouts
+- Rest days with purpose (mobility, foam rolling, etc.)
+
+Output ONLY this JSON format, nothing else:
+
+{
+  "totalWeeks": ${weeksUntilRace},
+  "raceDate": "${raceDateStr}",
+  "goal": "brief description of the athlete's goal",
+  "phases": [
+    { "name": "Base", "weekStart": 1, "weekEnd": ${baseEnd} },
+    { "name": "Build", "weekStart": ${baseEnd + 1}, "weekEnd": ${buildEnd} },
+    { "name": "Peak", "weekStart": ${buildEnd + 1}, "weekEnd": ${peakEnd} },
+    { "name": "Taper", "weekStart": ${peakEnd + 1}, "weekEnd": ${taperEnd} }
+  ],
+  "weeks": [
+    {
+      "week": 1,
+      "phase": "Base",
+      "focus": "brief focus for this week",
+      "totalMiles": 20,
+      "days": [
+        { "name": "Monday", "type": "Easy Run", "workout": "detailed workout description" },
+        { "name": "Tuesday", "type": "Rest", "workout": "detailed recovery description" },
+        { "name": "Wednesday", "type": "Workout", "workout": "detailed workout description" },
+        { "name": "Thursday", "type": "Easy Run", "workout": "detailed workout description" },
+        { "name": "Friday", "type": "Cross Training", "workout": "detailed workout description" },
+        { "name": "Saturday", "type": "Long Run", "workout": "detailed workout description" },
+        { "name": "Sunday", "type": "Rest", "workout": "detailed recovery description" }
+      ]
+    }
+  ]
+}`;
 
 ATHLETE PROFILE:
 ${JSON.stringify(quizData, null, 2)}
@@ -255,9 +305,16 @@ Respond ONLY with this exact JSON, no explanation, no markdown:
     }
 
     const data = await response.json();
-    let rawText = data.choices[0].message.content.trim();
-    rawText = rawText.replace(/```json|```/g, "").trim();
-    const plan = JSON.parse(rawText);
+let rawText = data.choices[0].message.content.trim();
+rawText = rawText.replace(/```json|```/g, "").trim();
+
+try {
+  const plan = JSON.parse(rawText);
+  // ... rest of your code
+} catch(e) {
+  console.error("Failed to parse plan JSON:", rawText);
+  throw new Error("AI returned invalid plan format. Please try again.");
+}
 
     const existing = await pool.query(
       "SELECT * FROM profiles WHERE user_id = $1", [userId]
