@@ -236,58 +236,6 @@ Output ONLY this JSON format, nothing else:
   ]
 }`;
 
-ATHLETE PROFILE:
-${JSON.stringify(quizData, null, 2)}
-...rest of prompt...
-`;
-
-RACE DATE: ${raceDateStr}
-WEEKS UNTIL RACE: ${weeksUntilRace}
-TODAY'S DATE: ${new Date().toDateString()}
-
-REQUIREMENTS:
-- Build a complete ${weeksUntilRace}-week training plan
-- Base phase: weeks 1-${baseEnd}
-- Build phase: weeks ${baseEnd + 1}-${buildEnd}
-- Peak phase: weeks ${buildEnd + 1}-${peakEnd}
-- Taper phase: weeks ${peakEnd + 1}-${taperEnd}
-- Include progressive overload week over week
-- Include transition/recovery weeks every 3-4 weeks
-- Consider the athlete's fitness, mileage, injuries, fatigue, sleep, stress, and running limiter
-- Integrate cross training, lifting, and plyometrics where appropriate
-- Every workout must be specific and detailed
-- Rest days should have a purpose (mobility, foam rolling, etc.)
-
-Respond ONLY with this exact JSON, no explanation, no markdown:
-{
-  "totalWeeks": ${weeksUntilRace},
-  "raceDate": "${raceDateStr}",
-  "goal": "brief description of the athlete's goal",
-  "phases": [
-    { "name": "Base", "weekStart": 1, "weekEnd": ${baseEnd} },
-    { "name": "Build", "weekStart": ${baseEnd + 1}, "weekEnd": ${buildEnd} },
-    { "name": "Peak", "weekStart": ${buildEnd + 1}, "weekEnd": ${peakEnd} },
-    { "name": "Taper", "weekStart": ${peakEnd + 1}, "weekEnd": ${taperEnd} }
-  ],
-  "weeks": [
-    {
-      "week": 1,
-      "phase": "Base",
-      "focus": "brief focus for this week",
-      "totalMiles": 20,
-      "days": [
-        { "name": "Monday", "type": "Easy Run", "workout": "detailed workout description" },
-        { "name": "Tuesday", "type": "Rest", "workout": "detailed recovery description" },
-        { "name": "Wednesday", "type": "Workout", "workout": "detailed workout description" },
-        { "name": "Thursday", "type": "Easy Run", "workout": "detailed workout description" },
-        { "name": "Friday", "type": "Cross Training", "workout": "detailed workout description" },
-        { "name": "Saturday", "type": "Long Run", "workout": "detailed workout description" },
-        { "name": "Sunday", "type": "Rest", "workout": "detailed recovery description" }
-      ]
-    }
-  ]
-}`;
-
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -307,16 +255,16 @@ Respond ONLY with this exact JSON, no explanation, no markdown:
     }
 
     const data = await response.json();
-let rawText = data.choices[0].message.content.trim();
-rawText = rawText.replace(/```json|```/g, "").trim();
+    let rawText = data.choices[0].message.content.trim();
+    rawText = rawText.replace(/```json|```/g, "").trim();
 
-try {
-  const plan = JSON.parse(rawText);
-  // ... rest of your code
-} catch(e) {
-  console.error("Failed to parse plan JSON:", rawText);
-  throw new Error("AI returned invalid plan format. Please try again.");
-}
+    let plan;
+    try {
+      plan = JSON.parse(rawText);
+    } catch(e) {
+      console.error("Failed to parse plan JSON:", rawText);
+      throw new Error("AI returned invalid plan format. Please try again.");
+    }
 
     const existing = await pool.query(
       "SELECT * FROM profiles WHERE user_id = $1", [userId]
@@ -464,7 +412,7 @@ app.post("/api/coach", requireAuth, async (req, res) => {
     const hasInjury = injuryKeywords.some(k => message.toLowerCase().includes(k));
     const hasPR = prKeywords.some(k => message.toLowerCase().includes(k));
 
-    const systemPrompt = `You are an elite AI running coach for PaceForge. You are science-backed, evidence-based, and deeply knowledgeable about exercise science, periodization, injury prevention, and athletic development.
+    const systemPrompt = `You are an elite AI running coach for PaceForge. You are science-backed, evidence-based, and deeply knowledgeable about exercise science, periodization, injury prevention, nutrition, and athlete development.
 
 ATHLETE PROFILE:
 ${JSON.stringify(quizData, null, 2)}
@@ -512,16 +460,20 @@ ${hasPR ? "- The athlete may have set a PR. Ask for details to log it." : ""}`;
       throw new Error(err.error?.message || "OpenAI API error");
     }
 
-   if (reply.includes("PLAN_CHANGE:")) {
-  const parts = reply.split("PLAN_CHANGE:");
-  reply = parts[0].trim();
-  try {
-    planChange = JSON.parse(parts[1].trim());
-  } catch(e) {
-    console.error("Failed to parse PLAN_CHANGE:", parts[1]);
-    planChange = null;
-  }
-}
+    const data = await response.json();
+    let reply = data.choices[0].message.content.trim();
+    let planChange = null;
+
+    if (reply.includes("PLAN_CHANGE:")) {
+      const parts = reply.split("PLAN_CHANGE:");
+      reply = parts[0].trim();
+      try {
+        planChange = JSON.parse(parts[1].trim());
+      } catch(e) {
+        console.error("Failed to parse PLAN_CHANGE:", parts[1]);
+        planChange = null;
+      }
+    }
 
     coachHistory[userId].push({ role: "assistant", content: reply });
 
